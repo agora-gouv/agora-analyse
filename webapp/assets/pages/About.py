@@ -1,6 +1,6 @@
 import streamlit as st
 
-IMAGE_FOLDER = "agora_topic_modeling/webapp/assets/images/"
+IMAGE_FOLDER = "webapp/assets/images/"
 
 def computing_infos():
     st.write("#### Information sur les calculs")

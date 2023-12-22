@@ -1,6 +1,5 @@
 import pandas as pd
 import streamlit as st
-from bertopic import BERTopic
 import json
 import os
 
@@ -11,13 +10,6 @@ def read_csv_input():
         df = pd.read_csv(uploaded_file)
         return df
     return None
-
-
-
-@st.cache_data
-def load_model(model_path: str)-> BERTopic:
-    custom_bertopic = BERTopic.load(model_path)
-    return custom_bertopic
 
 
 @st.cache_data

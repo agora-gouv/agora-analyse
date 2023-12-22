@@ -1,13 +1,11 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import json
 import os
 import shlex
 import matplotlib.pyplot as plt
 import plotly.express as px
-from sklearn.metrics.pairwise import cosine_similarity
-from bertopic import BERTopic
+#from sklearn.metrics.pairwise import cosine_similarity
 import collections
 
 
@@ -17,28 +15,27 @@ path_root = Path(__file__).parents[3]
 print(path_root)
 sys.path.append(str(path_root))
 
-from agora_topic_modeling.code.topic_dataviz import create_wordcloud_from_topic
-from assets.utils.dataload import load_model, load_cleaned_labels, load_doc_infos, load_stat_dict, read_csv_input
+from assets.utils.dataload import load_cleaned_labels, load_doc_infos, load_stat_dict, read_csv_input
 from assets.utils.datafilter import get_sentences_with_words, get_sentences_including_words
 from assets.utils.dataprep import prep_sentiment_analysis, prep_doc_info
 from assets.utils.dataclean import get_word_frequency
-#from assets.utils.dataviz import most_common_2g
+from assets.utils.dataviz import create_wordcloud_from_topic
 
 TOPIC_FOLDER = "data/topic_modeling/"
 
 
 # TODO: put in labeling pipeline 
-@st.cache_data
-def measure_similarity_of_topic(topic_labels: list[str], _topic_model):
-    embedding = _topic_model.embedding_model.embed(topic_labels)
-    similarity_matrix = cosine_similarity(embedding)
-    top_id = np.argmax(np.sum(similarity_matrix, axis=1))
-    top_label = topic_labels[top_id]
+# @st.cache_data
+# def measure_similarity_of_topic(topic_labels: list[str], _topic_model):
+#     embedding = _topic_model.embedding_model.embed(topic_labels)
+#     similarity_matrix = cosine_similarity(embedding)
+#     top_id = np.argmax(np.sum(similarity_matrix, axis=1))
+#     top_label = topic_labels[top_id]
 
-    # scoring topic
-    triu_mat = np.triu(similarity_matrix, k=1)
-    score = np.mean(triu_mat[np.nonzero(triu_mat)])
-    return similarity_matrix, top_label, score
+#     # scoring topic
+#     triu_mat = np.triu(similarity_matrix, k=1)
+#     score = np.mean(triu_mat[np.nonzero(triu_mat)])
+#     return similarity_matrix, top_label, score
 
 
 @st.cache_data
@@ -176,14 +173,14 @@ def display_sentiment_analysis(df_sentiment: pd.DataFrame):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def display_topic_info(topic: int, doc_infos: pd.DataFrame, cleaned_labels: list[list[str]], custom_bertopic: BERTopic, question_short: str):
+def display_topic_info(topic: int, doc_infos: pd.DataFrame, cleaned_labels: list[list[str]], word_freq: pd.DataFrame, question_short: str):
     stats = get_doc_stats(doc_infos)
     if topic is not None:
         topic_info = doc_infos[doc_infos["Topic"] == topic].copy()
         st.write("### Topic " + str(topic))
         label_cols = st.columns(2)
         with label_cols[0]:
-            display_topic_basic_info(topic, cleaned_labels, custom_bertopic, stats)
+            display_topic_basic_info(topic, cleaned_labels, word_freq, stats)
             
         with label_cols[1]:
             wc_folder = TOPIC_FOLDER + question_short + "/wordcloud/"
@@ -225,7 +222,6 @@ def topic_selection(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, cleaned_la
                 wordcloud.to_file(wc_filepath)
             # Afficher les nuages de mots
             with wc_columns[i%4]:
-                
                 st.write("### Topic " + str(i))
                 st.image(wc_filepath, width=300)
     with label_tab:
@@ -244,10 +240,10 @@ def topic_selection(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, cleaned_la
 
 def write():
     st.write("## Evaluation des topics générés")
-    options = ["transition_ecologique", "solutions_violence_enfants", "MDPH_MDU_negatif", "MDPH_MDU_positif", "mesure_transition_ecologique", "new_mesure_transition_ecologique"]
-    question_short = st.selectbox("Choisissez la question à analyser :", options=options)
+    #options = ["transition_ecologique", "solutions_violence_enfants", "MDPH_MDU_negatif", "MDPH_MDU_positif", "mesure_transition_ecologique", "new_mesure_transition_ecologique"]
+    #question_short = st.selectbox("Choisissez la question à analyser :", options=options)
     #st.write("### Question : Quelle est pour vous la mesure la plus importante pour réussir la transition écologique ? C’est la dernière question, partagez-nous toutes vos idées !")
-    
+    question_short = "Custom_analysis"
     
     # Data Prep
     #filepath = "data/topic_modeling/" + question_short + "/doc_infos.csv"

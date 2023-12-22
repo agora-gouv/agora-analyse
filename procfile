@@ -1,0 +1,1 @@
+postdeploy: streamlit run webapp/webapp.py

@@ -1,1 +1,1 @@
-web: bash start_webapp.sh
+worker: bash start_webapp.sh

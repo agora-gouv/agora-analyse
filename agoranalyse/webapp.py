@@ -8,8 +8,6 @@ import streamlit as st
 from PIL import Image
 import awesome_streamlit as ast
 from assets.pages import Evaluation_des_topics, About
-import nltk
-nltk.download('stopwords')
 
 #from dotenv import load_dotenv
 #load_dotenv()

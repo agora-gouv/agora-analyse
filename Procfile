@@ -1,1 +1,1 @@
-postdeploy: streamlit run agoranalyse/webapp.py
+web: streamlit run agoranalyse/webapp.py

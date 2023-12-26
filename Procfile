@@ -1,1 +1,1 @@
-web: streamlit run agoranalyse/webapp.py
+web: python3 -m streamlit run agoranalyse/webapp.py --server.port=8501 --server.address=0.0.0.0

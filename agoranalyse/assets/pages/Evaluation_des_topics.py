@@ -118,10 +118,10 @@ def subtopics_info(question_short: str, topic: str):
     if os.path.isdir(subtopic_model_path):
         subtopic_filepath = f"data/topic_modeling/{question_short}/doc_infos_{topic}.csv"
         st.write("#### Info sur les sous-topics")
-        sub_bertopic = load_model(subtopic_model_path)
         sub_doc_infos = prep_doc_info(load_doc_infos(subtopic_filepath))
         sub_stats = get_doc_stats(sub_doc_infos)
-        display_topic_overview(sub_bertopic, sub_stats, True)
+        word_freq = get_word_frequency(sub_doc_infos, "Document", "Topic")
+        display_topic_overview(word_freq, sub_stats, True)
         subtopic = st.selectbox("Sélectionnez le sous-topic à analyser : ", range(len(sub_stats) -1))
         subtopic_info = sub_doc_infos[sub_doc_infos["Topic"] == subtopic]
         most_presents_bigram = get_most_present_words_g(subtopic_info, "tokens", 2)

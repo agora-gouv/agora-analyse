@@ -4,6 +4,9 @@ import collections
 from nltk.corpus import stopwords
 import streamlit as st
 
+
+
+
 STOPWORDS = stopwords.words("french")
 PUNCTUATION = string.punctuation
 

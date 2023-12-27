@@ -39,12 +39,12 @@ TOPIC_FOLDER = "data/topic_modeling/"
 
 
 @st.cache_data
-def get_doc_stats(doc_infos: pd.DataFrame)-> pd.DataFrame:
+def get_doc_stats(doc_infos: pd.DataFrame, groupby="Topic")-> pd.DataFrame:
     doc_infos_upgraded = doc_infos.copy()
     doc_count = len(doc_infos_upgraded.index)
     threshold = 0.8
     doc_infos_upgraded["Good_proba"] = doc_infos_upgraded["Probability"] >= threshold
-    stats = doc_infos_upgraded.groupby("Topic").agg(nb_doc=("Document", "count"), good_docs=("Good_proba", sum))
+    stats = doc_infos_upgraded.groupby(groupby).agg(nb_doc=("Document", "count"), good_docs=("Good_proba", sum))
     stats["percentage"] = (stats["nb_doc"] / doc_count) * 100
     stats["percentage"] = stats["percentage"].round(decimals=2)
     stats["nb_doc"] = stats["nb_doc"].astype(int)
@@ -112,25 +112,26 @@ def get_most_present_words_g(df: pd.DataFrame, col: str, ngram: int):
     return most_presents_bigram
 
 
-def subtopics_info(question_short: str, topic: str):
-    subtopic_model_path = f"data/topic_modeling/{question_short}/bertopic_model_{topic}"
+#def prep_subtopic_data(doc_infos: pd.DataFrame):
+
+
+
+def subtopics_info(doc_infos: pd.DataFrame, topic: int):
+    #1subtopic_model_path = f"data/topic_modeling/{question_short}/bertopic_model_{topic}"
     # If folder exists
-    if os.path.isdir(subtopic_model_path):
-        subtopic_filepath = f"data/topic_modeling/{question_short}/doc_infos_{topic}.csv"
-        st.write("#### Info sur les sous-topics")
-        sub_doc_infos = prep_doc_info(load_doc_infos(subtopic_filepath))
-        sub_stats = get_doc_stats(sub_doc_infos)
-        word_freq = get_word_frequency(sub_doc_infos, "Document", "Topic")
-        display_topic_overview(word_freq, sub_stats, True)
-        subtopic = st.selectbox("Sélectionnez le sous-topic à analyser : ", range(len(sub_stats) -1))
-        subtopic_info = sub_doc_infos[sub_doc_infos["Topic"] == subtopic]
-        most_presents_bigram = get_most_present_words_g(subtopic_info, "tokens", 2)
-        st.write("##### Bi-gram les plus présents dans le sous-topic :")
-        st.write(most_presents_bigram)
-        selected_bigram = st.selectbox("Selectionner le bigram dont vous voulez voir les contributions", most_presents_bigram["bigram"].values)
-        sentences = get_sentences_with_words(subtopic_info, "tokens", selected_bigram, "Document")
-        with st.expander("Réponses avec le bigram sélectionné"):
-            st.dataframe(sentences, use_container_width=True)
+    sub_doc_infos = doc_infos[doc_infos["Topic"] == topic]
+    sub_stats = get_doc_stats(sub_doc_infos, "sub_topic")
+    word_freq = get_word_frequency(sub_doc_infos, "Document", "sub_topic")
+    display_topic_overview(word_freq, sub_stats, True)
+    subtopic = st.selectbox("Sélectionnez le sous-topic à analyser : ", range(len(sub_stats) -1))
+    subtopic_info = sub_doc_infos[sub_doc_infos["sub_topic"] == subtopic]
+    most_presents_bigram = get_most_present_words_g(subtopic_info, "tokens", 2)
+    st.write("##### Bi-gram les plus présents dans le sous-topic :")
+    st.write(most_presents_bigram)
+    selected_bigram = st.selectbox("Selectionner le bigram dont vous voulez voir les contributions", most_presents_bigram["bigram"].values)
+    sentences = get_sentences_with_words(subtopic_info, "tokens", selected_bigram, "Document")
+    with st.expander("Réponses avec le bigram sélectionné"):
+        st.dataframe(sentences, use_container_width=True)
 
 
 def display_topic_basic_info(topic: int, cleaned_labels: pd.DataFrame, word_freq: pd.DataFrame, stats: pd.DataFrame):
@@ -202,7 +203,7 @@ def display_topic_info(topic: int, doc_infos: pd.DataFrame, cleaned_labels: list
             expander.write(best_answers[i])
         display_answers_from_topic(doc_infos, topic)
         
-        subtopics_info(question_short, topic)
+        subtopics_info(doc_infos, topic)
 
 
 def topic_selection(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, cleaned_labels: pd.DataFrame, question_short: str):
@@ -252,11 +253,12 @@ def write():
     doc_infos_raw = read_csv_input()
     if doc_infos_raw is not None:
         doc_infos = prep_doc_info(doc_infos_raw)
+        st.write(doc_infos)
         #cleaned_labels = load_cleaned_labels(question_short, TOPIC_FOLDER)
         cleaned_labels = doc_infos.groupby("Topic").agg(label=("Name", "first"))
         stats = get_doc_stats(doc_infos)
-        stat_dict = load_stat_dict(question_short, TOPIC_FOLDER)
-        st.write(stat_dict)
+        #stat_dict = load_stat_dict(question_short, TOPIC_FOLDER)
+        #st.write(stat_dict)
         
         word_freq = get_word_frequency(doc_infos, "Document", "Topic")
         st.write(word_freq)

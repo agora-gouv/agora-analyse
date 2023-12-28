@@ -5,9 +5,10 @@ from nltk.corpus import stopwords
 
 @st.cache_data
 def prep_sentiment_analysis(df_sentiment: pd.DataFrame)-> pd.DataFrame:
-    if df_sentiment is None:
+    if "score" not in df_sentiment.columns:
         return None
     df_sentiment["is_high_score"] = df_sentiment["score"] > 0.75
+    df_sentiment["label_score"] = ""
     return df_sentiment
 
 

@@ -36,7 +36,9 @@ def get_word_frequency(df: pd.DataFrame, text_col: str, groupby_col: str):
     for groupby_key, group in df.groupby(groupby_col):
         group_counters[groupby_key] = pd.Series(' '.join(group["clean"]).split()).value_counts()[:10]
         size = len(group["clean"].index)
-        for i in range(10):
+        word_count = len(group_counters[groupby_key])
+        for i in range(word_count):
+        # Index error
             freq.append(group_counters[groupby_key][i] / size)
 
     counter_df = pd.concat(group_counters)

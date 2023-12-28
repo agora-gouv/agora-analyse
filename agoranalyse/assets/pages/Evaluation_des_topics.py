@@ -95,7 +95,7 @@ def display_topic_overview(word_freq: pd.DataFrame, stats: pd.DataFrame, is_subt
 
 
 def display_answers_from_topic(doc_info: pd.DataFrame, topic: int):
-    exp = st.expander("Afficher la liste les réponses du topic sélectionné")
+    exp = st.expander("Afficher la liste les réponses du topic sélectionné *(Score de confiance)*")
     with exp:
         st.dataframe(doc_info[doc_info["Topic"] == topic]["Answer_with_proba"].values, use_container_width=True)
     return
@@ -128,10 +128,8 @@ def subtopics_info(doc_infos: pd.DataFrame, topic: int):
     most_presents_bigram = get_most_present_words_g(subtopic_info, "tokens", 2)
     st.write("##### Bi-gram les plus présents dans le sous-topic :")
     st.write(most_presents_bigram)
-    selected_bigram = st.selectbox("Selectionner le bigram dont vous voulez voir les contributions", most_presents_bigram["bigram"].values)
-    sentences = get_sentences_with_words(subtopic_info, "tokens", selected_bigram, "Document")
-    with st.expander("Réponses avec le bigram sélectionné"):
-        st.dataframe(sentences, use_container_width=True)
+    display_selected_bigrams(subtopic_info, most_presents_bigram)
+    
 
 
 def display_topic_basic_info(topic: int, cleaned_labels: pd.DataFrame, word_freq: pd.DataFrame, stats: pd.DataFrame):
@@ -158,10 +156,10 @@ def display_sentiment_analysis(df_sentiment: pd.DataFrame):
     st.write("## Analyse de sentiments :")
     st.write("Score de sentiment par topic : ")
     # TODO: put in sent pipeline V
-    st.write(df_sentiment)
+    #st.write(df_sentiment)
     topics_sentiments = df_sentiment.groupby(["Topic", "label"]).agg(score_sum=("score", sum), high_score_count=("is_high_score", sum), count=("label", "count")).reset_index()
     color_map = {"positive": "green", "neutral": "blue", "negative": "red"}
-    st.dataframe(topics_sentiments, use_container_width=True)
+    #st.dataframe(topics_sentiments, use_container_width=True)
     fig = px.bar(topics_sentiments, "Topic", "score_sum", color="label", title="Analyse de sentiments par topic", color_discrete_map=color_map)
     fig.update_layout(showlegend=False, title_x=0.3)
     fig.update_xaxes(title="Topics")
@@ -172,6 +170,14 @@ def display_sentiment_analysis(df_sentiment: pd.DataFrame):
     fig.update_xaxes(title="Topics")
     fig.update_yaxes(title="Nombre de contribution forte")
     st.plotly_chart(fig, use_container_width=True)
+
+
+def display_selected_bigrams(topic_info: pd.DataFrame, most_presents_bigram: pd.DataFrame):
+    selected_bigram = st.selectbox("Selectionner le bigram dont vous voulez voir les contributions", most_presents_bigram["bigram"].values)
+    sentences = get_sentences_with_words(topic_info, "tokens", selected_bigram, "Document")
+    
+    with st.expander("Réponses avec le bigram sélectionné"):
+        st.dataframe(sentences.values, use_container_width=True)
 
 
 def display_topic_info(topic: int, doc_infos: pd.DataFrame, cleaned_labels: list[list[str]], word_freq: pd.DataFrame, question_short: str):
@@ -191,11 +197,7 @@ def display_topic_info(topic: int, doc_infos: pd.DataFrame, cleaned_labels: list
             st.write("##### Bi-gram les plus présents dans le topic :")
             st.write(most_presents_bigram)
         
-        selected_bigram = st.selectbox("Selectionner le bigram dont vous voulez voir les contributions", most_presents_bigram["bigram"].values)
-        sentences = get_sentences_with_words(topic_info, "tokens", selected_bigram, "Document")
-        with st.expander("Réponses avec le bigram sélectionné"):
-            st.dataframe(sentences, use_container_width=True)
-
+        display_selected_bigrams(topic_info, most_presents_bigram)
         best = doc_infos[doc_infos["Topic"] == topic]["Representative_Docs"].values[0]
         best_answers = shlex.split(best[1:-1])
         expander = st.expander("Afficher les réponses pertinentes")
@@ -232,7 +234,7 @@ def topic_selection(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, cleaned_la
         stats = get_doc_stats(doc_infos)
         display_outliers_topic(doc_infos, word_freq, stats)
     with sentiment_tab:
-        df_sentiment = prep_sentiment_analysis(load_doc_infos("data/topic_modeling/" + question_short + "/doc_info_sentiments.csv"))
+        df_sentiment = prep_sentiment_analysis(doc_infos)
         if df_sentiment is not None:
             display_sentiment_analysis(df_sentiment)
         else:
@@ -253,7 +255,6 @@ def write():
     doc_infos_raw = read_csv_input()
     if doc_infos_raw is not None:
         doc_infos = prep_doc_info(doc_infos_raw)
-        st.write(doc_infos)
         #cleaned_labels = load_cleaned_labels(question_short, TOPIC_FOLDER)
         cleaned_labels = doc_infos.groupby("Topic").agg(label=("Name", "first"))
         stats = get_doc_stats(doc_infos)
@@ -261,7 +262,6 @@ def write():
         #st.write(stat_dict)
         
         word_freq = get_word_frequency(doc_infos, "Document", "Topic")
-        st.write(word_freq)
         display_topic_overview(word_freq, stats)
         
         

@@ -78,7 +78,7 @@ def display_outliers_topic(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, sta
     title = f"{type} -1 : {int(stats.loc[-1]['nb_doc'])} réponses ({stats.loc[-1]['percentage']}%)"
     freq_words = word_freq[word_freq["topic"] == -1]
     plot_frequent_words(freq_words, title)
-    display_answers_from_topic(doc_infos, -1)
+    display_answers_from_topic(doc_infos[doc_infos["Topic"] == -1])
 
 
 def display_topic_overview(word_freq: pd.DataFrame, stats: pd.DataFrame, is_subtopic: bool=False):
@@ -94,10 +94,12 @@ def display_topic_overview(word_freq: pd.DataFrame, stats: pd.DataFrame, is_subt
     return
 
 
-def display_answers_from_topic(doc_info: pd.DataFrame, topic: int):
-    exp = st.expander("Afficher la liste les réponses du topic sélectionné *(Score de confiance)*")
+def display_answers_from_topic(doc_info: pd.DataFrame):
+    exp = st.expander("Afficher la liste les réponses du topic sélectionné")
     with exp:
-        st.dataframe(doc_info[doc_info["Topic"] == topic]["Answer_with_proba"].values, use_container_width=True)
+        st.write("Légende : *(Score de confiance)(Score de sentiment) -- réponse*")
+        st.write("'+': positif, '~': neutre, '-': négatif")
+        st.dataframe(doc_info["Answer_with_proba"].values, use_container_width=True)
     return
 
 
@@ -129,6 +131,7 @@ def subtopics_info(doc_infos: pd.DataFrame, topic: int):
     st.write("##### Bi-gram les plus présents dans le sous-topic :")
     st.write(most_presents_bigram)
     display_selected_bigrams(subtopic_info, most_presents_bigram)
+    display_answers_from_topic(subtopic_info)
     
 
 
@@ -143,11 +146,13 @@ def display_topic_basic_info(topic: int, cleaned_labels: pd.DataFrame, word_freq
     #st.write("**" + top_label + "**")
     #st.write("*Score de confiance : " + str(score) + "*")
 
-    other_labels = st.checkbox("Afficher les labels potentiels ?")
-    if other_labels:
-        st.write("Les labels potentiels sont : ")
-        for i in range(len(cleaned_labels[topic])):
-            st.write("*" + cleaned_labels[topic][i] + "*")
+
+    # TODO : Check labels from SQL Data
+    # other_labels = st.checkbox("Afficher les labels potentiels ?")
+    # if other_labels:
+    #     st.write("Les labels potentiels sont : ")
+    #     for i in range(len(cleaned_labels[topic])):
+    #         st.write("*" + cleaned_labels[topic][i] + "*")
     
     plot_frequent_words(word_freq[word_freq["topic"] == topic])
 
@@ -155,17 +160,16 @@ def display_topic_basic_info(topic: int, cleaned_labels: pd.DataFrame, word_freq
 def display_sentiment_analysis(df_sentiment: pd.DataFrame):
     st.write("## Analyse de sentiments :")
     st.write("Score de sentiment par topic : ")
-    # TODO: put in sent pipeline V
-    #st.write(df_sentiment)
-    topics_sentiments = df_sentiment.groupby(["Topic", "label"]).agg(score_sum=("score", sum), high_score_count=("is_high_score", sum), count=("label", "count")).reset_index()
+    # TODO: put in sentiment pipeline V
+    topics_sentiments = df_sentiment.groupby(["Topic", "sentiment"]).agg(score_sum=("sentiment_score", sum), high_score_count=("is_high_score", sum), count=("sentiment", "count")).reset_index()
     color_map = {"positive": "green", "neutral": "blue", "negative": "red"}
-    #st.dataframe(topics_sentiments, use_container_width=True)
-    fig = px.bar(topics_sentiments, "Topic", "score_sum", color="label", title="Analyse de sentiments par topic", color_discrete_map=color_map)
+    st.dataframe(df_sentiment[["Document", "sentiment", "sentiment_score"]], use_container_width=True, hide_index=True)
+    fig = px.bar(topics_sentiments, "Topic", "score_sum", color="sentiment", title="Analyse de sentiments par topic", color_discrete_map=color_map)
     fig.update_layout(showlegend=False, title_x=0.3)
     fig.update_xaxes(title="Topics")
     fig.update_yaxes(title="Score de sentiment")
     st.plotly_chart(fig, use_container_width=True)
-    fig = px.bar(topics_sentiments, "Topic", "high_score_count", color="label", title="Analyse de sentiments par topic", color_discrete_map=color_map)
+    fig = px.bar(topics_sentiments, "Topic", "high_score_count", color="sentiment", title="Analyse de sentiments par topic", color_discrete_map=color_map)
     fig.update_layout(showlegend=False, title_x=0.3)
     fig.update_xaxes(title="Topics")
     fig.update_yaxes(title="Nombre de contribution forte")
@@ -198,12 +202,12 @@ def display_topic_info(topic: int, doc_infos: pd.DataFrame, cleaned_labels: list
             st.write(most_presents_bigram)
         
         display_selected_bigrams(topic_info, most_presents_bigram)
-        best = doc_infos[doc_infos["Topic"] == topic]["Representative_Docs"].values[0]
-        best_answers = shlex.split(best[1:-1])
+        best_answers = doc_infos[(doc_infos["Topic"] == topic) & (doc_infos["Representative_document"])]["Document"].values
+        #best_answers = shlex.split(best[1:-1])
         expander = st.expander("Afficher les réponses pertinentes")
         for i in range(len(best_answers)):
             expander.write(best_answers[i])
-        display_answers_from_topic(doc_infos, topic)
+        display_answers_from_topic(topic_info)
         
         subtopics_info(doc_infos, topic)
 

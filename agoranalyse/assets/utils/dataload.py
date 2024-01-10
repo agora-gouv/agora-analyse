@@ -1,7 +1,60 @@
 import pandas as pd
+import numpy as np
 import streamlit as st
 import json
 import os
+
+from pathlib import Path
+import sys
+path_root = Path(__file__).parents[3]
+print(path_root)
+sys.path.append(str(path_root))
+
+from assets.utils.psql_utils import get_connection
+
+
+def get_questions_df():
+    conn = get_connection(section="agora_nlp_psy")
+    questions_df = pd.read_sql_query("SELECT * FROM questions", con=conn)
+    conn.close()
+    return questions_df
+
+
+def read_representative_docs(topics_ids: list[str], conn)-> pd.DataFrame:
+    separator = "', '"
+    query = f"SELECT * FROM representative_responses WHERE topic_id IN ( '{separator.join(topics_ids)}' )"
+    representative_df = pd.read_sql_query(query, con=conn)
+    representative_df = representative_df.drop(axis=0, columns="topic_id")
+    return representative_df
+
+
+def read_sql_input(question_id: str):
+    conn = get_connection(section="agora_nlp_psy")
+    topic_query = f"SELECT * FROM topics WHERE question_id='{question_id}'"
+    
+    topics_df = pd.read_sql_query(topic_query, con=conn)
+    topics_ids = topics_df["id"]
+    sub_topics = topics_df[~topics_df["parent_topic_id"].isna()]
+    separator = "', '"
+    query = f"SELECT * FROM responses WHERE topic_id IN ( '{separator.join(topics_ids)}' )"
+    doc_info_raw = pd.read_sql_query(query, con=conn)
+    representative_df = read_representative_docs(topics_ids, conn)
+    representative_df["Representative_document"] = True
+    conn.close()
+    doc_with_topics = doc_info_raw.merge(topics_df, left_on="topic_id", right_on="id", suffixes=("", "topic"))
+    doc_with_topics = doc_with_topics.merge(sub_topics, left_on="sub_topic_id", right_on="id", suffixes=("", "sub"))
+    doc_with_topics = representative_df.merge(doc_with_topics, left_on="response_id", right_on="id", how="right", suffixes=("", "response"))
+    doc_with_topics["Topic"] = doc_with_topics["name"].str.split("_").str[0].astype(int)
+    doc_with_topics["namesub"] = doc_with_topics["namesub"].fillna("-2_not_subtopic")
+    doc_with_topics["sub_topic"] = np.where(~doc_with_topics["namesub"].isna(), doc_with_topics["namesub"].str.split("_").str[0].astype(int), -2)
+    rename = {"text": "Document",
+              "topic_probability": "Probability",
+              "name": "Name"}
+    doc_with_topics["Representative_document"] = doc_with_topics["Representative_document"].fillna(False)
+    doc_with_topics = doc_with_topics.drop(axis=0, columns=["idtopic"])
+    doc_with_topics = doc_with_topics.rename(columns=rename)
+    return doc_with_topics
+
 
 
 def read_csv_input():

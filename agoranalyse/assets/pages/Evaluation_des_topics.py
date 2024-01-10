@@ -15,7 +15,7 @@ path_root = Path(__file__).parents[3]
 print(path_root)
 sys.path.append(str(path_root))
 
-from assets.utils.dataload import load_cleaned_labels, load_doc_infos, load_stat_dict, read_csv_input
+from assets.utils.dataload import load_cleaned_labels, load_doc_infos, read_csv_input, get_questions_df, read_sql_input
 from assets.utils.datafilter import get_sentences_with_words, get_sentences_including_words
 from assets.utils.dataprep import prep_sentiment_analysis, prep_doc_info
 from assets.utils.dataclean import get_word_frequency
@@ -221,10 +221,10 @@ def topic_selection(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, cleaned_la
         wc_folder = TOPIC_FOLDER + question_short + "/wordcloud/"
         wc_columns = st.columns(4)
         for i in range(topic_count):
+            os.makedirs(wc_folder, exist_ok=True)
             wc_filepath = wc_folder + "wc_" + str(i) + ".png"
             # Si les nuages de mots n'existent pas les calculer
-            if not os.path.isdir(wc_folder) or force_compute:
-                os.makedirs(wc_folder, exist_ok=True) 
+            if not os.path.isfile(wc_filepath) or force_compute:
                 wordcloud = create_wordcloud_from_topic(word_freq[word_freq["topic"] == i])
                 wordcloud.to_file(wc_filepath)
             # Afficher les nuages de mots
@@ -245,18 +245,36 @@ def topic_selection(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, cleaned_la
             st.write("Pas d'analyse de sentiment disponible pour cette question pour le moment.")
 
 
+def select_question_from_database(questions_df):
+    options = questions_df["id"].values
+    selected_option = st.selectbox("Choisissez la question dont vous voulez voir l'analyse :", options=options)
+    #question_id = questions_df[questions_df["title"] == selected_option]["id"][0]
+    st.write(selected_option)
+    return selected_option
+
+
 def write():
     st.write("## Evaluation des topics générés")
     #options = ["transition_ecologique", "solutions_violence_enfants", "MDPH_MDU_negatif", "MDPH_MDU_positif", "mesure_transition_ecologique", "new_mesure_transition_ecologique"]
     #question_short = st.selectbox("Choisissez la question à analyser :", options=options)
     #st.write("### Question : Quelle est pour vous la mesure la plus importante pour réussir la transition écologique ? C’est la dernière question, partagez-nous toutes vos idées !")
+    
+    analyse = st.radio("Choisissez le mode d'analyse :", options=["Par fichier", "Par SQL"])
+    if analyse == "Par fichier": 
+        doc_infos_raw = read_csv_input()
+        
+    else:
+        questions_df = get_questions_df()
+        question_id = select_question_from_database(questions_df)
+        doc_infos_raw = read_sql_input(question_id)
+
     question_short = "Custom_analysis"
     
     # Data Prep
     #filepath = "data/topic_modeling/" + question_short + "/doc_infos.csv"
     #doc_infos = prep_doc_info(load_doc_infos(filepath))
     
-    doc_infos_raw = read_csv_input()
+    
     if doc_infos_raw is not None:
         doc_infos = prep_doc_info(doc_infos_raw)
         #cleaned_labels = load_cleaned_labels(question_short, TOPIC_FOLDER)

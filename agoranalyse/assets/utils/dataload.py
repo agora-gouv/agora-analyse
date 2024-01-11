@@ -3,7 +3,7 @@ import numpy as np
 import streamlit as st
 import json
 import os
-
+from sqlalchemy import create_engine
 from pathlib import Path
 import sys
 path_root = Path(__file__).parents[3]
@@ -14,9 +14,12 @@ from assets.utils.psql_utils import get_connection
 
 
 def get_questions_df():
-    conn = get_connection(section="agora_nlp_psy")
-    questions_df = pd.read_sql_query("SELECT * FROM questions", con=conn)
-    conn.close()
+    #conn = get_connection(section="agora_nlp_psy")
+    url = os.environ["SCALINGO_POSTGRESQL_URL"]
+    engine = create_engine(url)
+    with engine.connect() as conn:
+        questions_df = pd.read_sql_query("SELECT * FROM questions", con=conn)
+    #conn.close()
     return questions_df
 
 

@@ -15,7 +15,7 @@ from assets.utils.psql_utils import get_connection
 
 def get_questions_df():
     #conn = get_connection(section="agora_nlp_psy")
-    url = os.environ["SCALINGO_POSTGRESQL_URL"]
+    url = os.getenv("SCALINGO_POSTGRESQL_URL")
     engine = create_engine(url)
     with engine.connect() as conn:
         questions_df = pd.read_sql_query("SELECT * FROM questions", con=conn)

@@ -26,24 +26,29 @@ def get_questions_df():
 def read_representative_docs(topics_ids: list[str], conn)-> pd.DataFrame:
     separator = "', '"
     query = f"SELECT * FROM representative_responses WHERE topic_id IN ( '{separator.join(topics_ids)}' )"
-    representative_df = pd.read_sql_query(query, con=conn)
+    url = os.getenv("SCALINGO_POSTGRESQL_URL")
+    engine = create_engine(url)
+    with engine.connect() as conn:
+        representative_df = pd.read_sql_query(query, con=conn)
     representative_df = representative_df.drop(axis=0, columns="topic_id")
     return representative_df
 
 
 def read_sql_input(question_id: str):
-    conn = get_connection(section="agora_nlp_psy")
-    topic_query = f"SELECT * FROM topics WHERE question_id='{question_id}'"
     
-    topics_df = pd.read_sql_query(topic_query, con=conn)
-    topics_ids = topics_df["id"]
-    sub_topics = topics_df[~topics_df["parent_topic_id"].isna()]
-    separator = "', '"
-    query = f"SELECT * FROM responses WHERE topic_id IN ( '{separator.join(topics_ids)}' )"
-    doc_info_raw = pd.read_sql_query(query, con=conn)
+    
+    url = os.getenv("SCALINGO_POSTGRESQL_URL")
+    engine = create_engine(url)
+    with engine.connect() as conn:
+        topic_query = f"SELECT * FROM topics WHERE question_id='{question_id}'"
+        topics_df = pd.read_sql_query(topic_query, con=conn)
+        topics_ids = topics_df["id"]
+        sub_topics = topics_df[~topics_df["parent_topic_id"].isna()]
+        separator = "', '"
+        query = f"SELECT * FROM responses WHERE topic_id IN ( '{separator.join(topics_ids)}' )"
+        doc_info_raw = pd.read_sql_query(query, con=conn)
     representative_df = read_representative_docs(topics_ids, conn)
     representative_df["Representative_document"] = True
-    conn.close()
     doc_with_topics = doc_info_raw.merge(topics_df, left_on="topic_id", right_on="id", suffixes=("", "topic"))
     doc_with_topics = doc_with_topics.merge(sub_topics, left_on="sub_topic_id", right_on="id", suffixes=("", "sub"))
     doc_with_topics = representative_df.merge(doc_with_topics, left_on="response_id", right_on="id", how="right", suffixes=("", "response"))

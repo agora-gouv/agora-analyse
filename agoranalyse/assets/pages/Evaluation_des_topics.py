@@ -238,11 +238,10 @@ def topic_selection(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, cleaned_la
 
 
 def select_question_from_database(questions_df):
-    options = questions_df["id"].values
+    options = questions_df["title"].values
     selected_option = st.selectbox("Choisissez la question dont vous voulez voir l'analyse :", options=options)
-    #question_id = questions_df[questions_df["title"] == selected_option]["id"][0]
-    st.write(selected_option)
-    return selected_option
+    question_id = questions_df[questions_df["title"] == selected_option]["id"][0]
+    return question_id
 
 
 def write():

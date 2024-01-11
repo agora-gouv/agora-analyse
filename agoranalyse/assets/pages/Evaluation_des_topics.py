@@ -5,7 +5,6 @@ import os
 import shlex
 import matplotlib.pyplot as plt
 import plotly.express as px
-#from sklearn.metrics.pairwise import cosine_similarity
 import collections
 
 
@@ -114,13 +113,7 @@ def get_most_present_words_g(df: pd.DataFrame, col: str, ngram: int):
     return most_presents_bigram
 
 
-#def prep_subtopic_data(doc_infos: pd.DataFrame):
-
-
-
 def subtopics_info(doc_infos: pd.DataFrame, topic: int):
-    #1subtopic_model_path = f"data/topic_modeling/{question_short}/bertopic_model_{topic}"
-    # If folder exists
     sub_doc_infos = doc_infos[doc_infos["Topic"] == topic]
     sub_stats = get_doc_stats(sub_doc_infos, "sub_topic")
     word_freq = get_word_frequency(sub_doc_infos, "Document", "sub_topic")
@@ -133,7 +126,6 @@ def subtopics_info(doc_infos: pd.DataFrame, topic: int):
     display_selected_bigrams(subtopic_info, most_presents_bigram)
     display_answers_from_topic(subtopic_info)
     
-
 
 def display_topic_basic_info(topic: int, cleaned_labels: pd.DataFrame, word_freq: pd.DataFrame, stats: pd.DataFrame):
     #sim_matrix, top_label, score = measure_similarity_of_topic(cleaned_labels[topic], custom_bertopic)
@@ -255,9 +247,6 @@ def select_question_from_database(questions_df):
 
 def write():
     st.write("## Evaluation des topics générés")
-    #options = ["transition_ecologique", "solutions_violence_enfants", "MDPH_MDU_negatif", "MDPH_MDU_positif", "mesure_transition_ecologique", "new_mesure_transition_ecologique"]
-    #question_short = st.selectbox("Choisissez la question à analyser :", options=options)
-    #st.write("### Question : Quelle est pour vous la mesure la plus importante pour réussir la transition écologique ? C’est la dernière question, partagez-nous toutes vos idées !")
     
     analyse = st.radio("Choisissez le mode d'analyse :", options=["Par fichier", "Par SQL"])
     if analyse == "Par fichier": 
@@ -270,18 +259,12 @@ def write():
 
     question_short = "Custom_analysis"
     
-    # Data Prep
-    #filepath = "data/topic_modeling/" + question_short + "/doc_infos.csv"
-    #doc_infos = prep_doc_info(load_doc_infos(filepath))
-    
     
     if doc_infos_raw is not None:
         doc_infos = prep_doc_info(doc_infos_raw)
         #cleaned_labels = load_cleaned_labels(question_short, TOPIC_FOLDER)
         cleaned_labels = doc_infos.groupby("Topic").agg(label=("Name", "first"))
         stats = get_doc_stats(doc_infos)
-        #stat_dict = load_stat_dict(question_short, TOPIC_FOLDER)
-        #st.write(stat_dict)
         
         word_freq = get_word_frequency(doc_infos, "Document", "Topic")
         display_topic_overview(word_freq, stats)

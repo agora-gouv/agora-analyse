@@ -25,7 +25,8 @@ def get_questions_df():
 
 def read_representative_docs(topics_ids: list[str], conn)-> pd.DataFrame:
     separator = "', '"
-    query = f"SELECT * FROM representative_responses WHERE topic_id IN ( '{separator.join(topics_ids)}' )"
+    topic_id_list = (str(v) for v in topics_ids)
+    query = f"SELECT * FROM representative_responses WHERE topic_id IN ( '{separator.join(topic_id_list)}' )"
     url = os.getenv("SCALINGO_POSTGRESQL_URL")
     engine = create_engine(url)
     with engine.connect() as conn:
@@ -35,8 +36,6 @@ def read_representative_docs(topics_ids: list[str], conn)-> pd.DataFrame:
 
 
 def read_sql_input(question_id: str):
-    
-    
     url = os.getenv("SCALINGO_POSTGRESQL_URL")
     engine = create_engine(url)
     with engine.connect() as conn:
@@ -45,7 +44,8 @@ def read_sql_input(question_id: str):
         topics_ids = topics_df["id"]
         sub_topics = topics_df[~topics_df["parent_topic_id"].isna()]
         separator = "', '"
-        query = f"SELECT * FROM responses WHERE topic_id IN ( '{separator.join(topics_ids)}' )"
+        topic_id_list = (str(v) for v in topics_ids)
+        query = f"SELECT * FROM responses WHERE topic_id IN ( '{separator.join(topic_id_list)}' )"
         doc_info_raw = pd.read_sql_query(query, con=conn)
     representative_df = read_representative_docs(topics_ids, conn)
     representative_df["Representative_document"] = True

@@ -205,7 +205,7 @@ def display_topic_info(topic: int, doc_infos: pd.DataFrame, cleaned_labels: list
 
 
 def topic_selection(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, cleaned_labels: pd.DataFrame, question_short: str):
-    topic_count = 8
+    topic_count = min(8, word_freq["topic"].max() + 1)
     label_tab, wc_tab, outlier_tab, sentiment_tab = st.tabs(["Détails des Topics", "Nuages de mots", "Cas Particuliers", "Analyse de sentiment"])
     st.markdown("---")
     with wc_tab:
@@ -240,7 +240,7 @@ def topic_selection(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, cleaned_la
 def select_question_from_database(questions_df):
     options = questions_df["title"].values
     selected_option = st.selectbox("Choisissez la question dont vous voulez voir l'analyse :", options=options)
-    question_id = questions_df[questions_df["title"] == selected_option]["id"][0]
+    question_id = questions_df[questions_df["title"] == selected_option]["id"].values[0]
     return question_id
 
 

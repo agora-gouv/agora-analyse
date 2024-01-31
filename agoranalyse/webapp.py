@@ -9,14 +9,10 @@ from PIL import Image
 import awesome_streamlit as ast
 from assets.pages import Evaluation_des_topics, About
 
-#from dotenv import load_dotenv
-#load_dotenv()
-
 
 PAGES = {
     "❓ A propos": About,
     "📊 Evaluations des topics": Evaluation_des_topics,
-    #"📈 Calcul du Qualiscore": Qualiscore
 }
 
 
@@ -25,7 +21,7 @@ def main():
 
     # logo = Image.open("src/webapp/assets/medias/logo.png")
     # st.sidebar.image(logo, width=300)
-    st.sidebar.title("Navigation Agora NLP")
+    st.sidebar.title("Navigation Agoranalyse")
     selection = st.sidebar.radio("Choisir la page", list(PAGES.keys()))
     page = PAGES[selection]
     st.sidebar.markdown("""---""")

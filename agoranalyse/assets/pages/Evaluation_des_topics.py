@@ -43,7 +43,7 @@ def get_doc_stats(doc_infos: pd.DataFrame, groupby="Topic")-> pd.DataFrame:
     doc_count = len(doc_infos_upgraded.index)
     threshold = 0.8
     doc_infos_upgraded["Good_proba"] = doc_infos_upgraded["Probability"] >= threshold
-    stats = doc_infos_upgraded.groupby(groupby).agg(nb_doc=("Document", "count"), good_docs=("Good_proba", sum))
+    stats = doc_infos_upgraded.groupby(groupby).agg(nb_doc=("Document", "count"), good_docs=("Good_proba", "sum"))
     stats["percentage"] = (stats["nb_doc"] / doc_count) * 100
     stats["percentage"] = stats["percentage"].round(decimals=2)
     stats["nb_doc"] = stats["nb_doc"].astype(int)
@@ -153,7 +153,7 @@ def display_sentiment_analysis(df_sentiment: pd.DataFrame):
     st.write("## Analyse de sentiments :")
     st.write("Score de sentiment par topic : ")
     # TODO: put in sentiment pipeline V
-    topics_sentiments = df_sentiment.groupby(["Topic", "sentiment"]).agg(score_sum=("sentiment_score", sum), high_score_count=("is_high_score", sum), count=("sentiment", "count")).reset_index()
+    topics_sentiments = df_sentiment.groupby(["Topic", "sentiment"]).agg(score_sum=("sentiment_score", "sum"), high_score_count=("is_high_score", "sum"), count=("sentiment", "count")).reset_index()
     color_map = {"positive": "green", "neutral": "blue", "negative": "red"}
     st.dataframe(df_sentiment[["Document", "sentiment", "sentiment_score"]], use_container_width=True, hide_index=True)
     fig = px.bar(topics_sentiments, "Topic", "score_sum", color="sentiment", title="Analyse de sentiments par topic", color_discrete_map=color_map)
@@ -204,16 +204,29 @@ def display_topic_info(topic: int, doc_infos: pd.DataFrame, cleaned_labels: list
         subtopics_info(doc_infos, topic)
 
 
+def init_wordcloud(word_freq: pd.DataFrame, wc_folder: str):
+    topic_count = word_freq["topic"].max() + 1
+    os.makedirs(wc_folder, exist_ok=True)
+    for i in range(topic_count):
+        wc_filepath = wc_folder + "wc_" + str(i) + ".png"    
+        wordcloud = create_wordcloud_from_topic(word_freq[word_freq["topic"] == i])
+        wordcloud.to_file(wc_filepath)
+    return
+
+
 def topic_selection(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, cleaned_labels: pd.DataFrame, question_short: str):
-    topic_count = min(8, word_freq["topic"].max() + 1)
+    topic_count = word_freq["topic"].max() + 1
     label_tab, wc_tab, outlier_tab, sentiment_tab = st.tabs(["Détails des Topics", "Nuages de mots", "Cas Particuliers", "Analyse de sentiment"])
     st.markdown("---")
     with wc_tab:
         force_compute = st.button("Recalculer les nuages de mots")
         wc_folder = TOPIC_FOLDER + question_short + "/wordcloud/"
         wc_columns = st.columns(4)
+        os.makedirs(wc_folder, exist_ok=True)
+        if 'wc' not in st.session_state:
+            st.session_state.wc = "done"
+            init_wordcloud(word_freq, wc_folder)
         for i in range(topic_count):
-            os.makedirs(wc_folder, exist_ok=True)
             wc_filepath = wc_folder + "wc_" + str(i) + ".png"
             # Si les nuages de mots n'existent pas les calculer
             if not os.path.isfile(wc_filepath) or force_compute:
@@ -238,10 +251,10 @@ def topic_selection(doc_infos: pd.DataFrame, word_freq: pd.DataFrame, cleaned_la
 
 
 def select_question_from_database(questions_df):
-    options = questions_df["title"].values
+    st.write(questions_df[["title", "id"]])
+    options = questions_df["id"].values
     selected_option = st.selectbox("Choisissez la question dont vous voulez voir l'analyse :", options=options)
-    question_id = questions_df[questions_df["title"] == selected_option]["id"].values[0]
-    return question_id
+    return selected_option
 
 
 def write():
@@ -250,7 +263,6 @@ def write():
     analyse = st.radio("Choisissez le mode d'analyse :", options=["Par fichier", "Par SQL"])
     if analyse == "Par fichier": 
         doc_infos_raw = read_csv_input()
-        
     else:
         questions_df = get_questions_df()
         question_id = select_question_from_database(questions_df)
@@ -260,12 +272,14 @@ def write():
     
     
     if doc_infos_raw is not None:
-        doc_infos = prep_doc_info(doc_infos_raw)
+        doc_infos = prep_doc_info(doc_infos_raw)        
         #cleaned_labels = load_cleaned_labels(question_short, TOPIC_FOLDER)
         cleaned_labels = doc_infos.groupby("Topic").agg(label=("Name", "first"))
         stats = get_doc_stats(doc_infos)
         
         word_freq = get_word_frequency(doc_infos, "Document", "Topic")
+        wc_folder = TOPIC_FOLDER + question_short + "/wordcloud/"
+        init_wordcloud(word_freq,  wc_folder)
         display_topic_overview(word_freq, stats)
         
         

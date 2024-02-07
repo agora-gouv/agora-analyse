@@ -1,1 +1,1 @@
-web: bin/setup-htpasswd.sh && bash start_webapp.sh
+web: bin/setup-htpasswd.sh && bin/run && bash start_webapp.sh

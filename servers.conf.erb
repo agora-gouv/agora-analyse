@@ -1,0 +1,29 @@
+server {
+    server_name localhost;
+    listen <%= ENV['PORT'] %>;
+
+    <% if ENV['NGINX_PASSWORD'] %>
+    auth_basic "Protected Site User: <%= ENV['NGINX_USER'] %>";
+    auth_basic_user_file "/app/config/htpasswd";
+    <% end %>
+
+    location / {
+        proxy_pass http://localhost:<%= ENV['AGORA_PORT'] %>;
+        proxy_set_header  X-Remote-Address $remote_addr;
+        proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_redirect default;
+    }
+
+    location /_stcore/stream {
+        proxy_pass http://localhost:<%= ENV['AGORA_PORT'] %>/_stcore/stream;
+        proxy_http_version 1.1;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+                              
+    charset utf-8;
+    autoindex off;
+    root /app/public_html;
+}

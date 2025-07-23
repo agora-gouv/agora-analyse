@@ -22,26 +22,28 @@ L'installation est un processus en 3 étapes :
 - Activer **l'environnement virtuel** *python*
 - Installer les dépendances requises
 
-```bash 
-# Create a new environment named as you would like 
-python3 -m venv new_env
+```bash
+# Create a new environment named as you would like
+python3 -m venv "venv"
 ```
 
-```bash 
+```bash
 # Load the virtual environment you created previously
-source new_env/bin/activate
+source venv/bin/activate
 ```
 
 ```bash
 # Install the required dependencies that have been stored in a file for the occasion
 pip install -r requirements.txt
+# And those that haven't
+python
+>>> import nltk
+>>> nltk.download("stopwords")
 ```
 
 ### Usage
 Pour lancer l'application web, vous pouvez exécuter la commande suivante :
 ```bash
-streamlit run agoranale/webapp.py
+streamlit run agoranalyse/webapp.py
 ```
 
-
-> Author: Theo Santos
